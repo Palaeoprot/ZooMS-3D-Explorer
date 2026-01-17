@@ -5,3 +5,4 @@ opencv-python
 pyzbar
 requests
 python-dateutil
+Pillow
