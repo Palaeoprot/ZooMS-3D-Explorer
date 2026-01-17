@@ -98,7 +98,7 @@ def log_to_gsheet(service, sheet_id, mapping):
         result = service.spreadsheets().values().get(spreadsheetId=sheet_id, range=range_name).execute()
         rows = result.get('values', [])
 
-        headers = ["Parchment ID", "Original Filename", "Captured Date", "Sync Date", "Creator", "Camera", "Location", "Image Preview", "QR Preview"]
+        headers = ["Parchment ID", "Original Filename", "Captured Date", "Sync Date", "Camera", "Image Preview", "QR Preview"]
         if not rows:
             # Initialize with headers
             rows = [headers]
@@ -130,9 +130,7 @@ def log_to_gsheet(service, sheet_id, mapping):
                 "Original Filename": item.get('filename', 'Unknown'),
                 "Captured Date": item.get('timestamp', 'Unknown'),
                 "Sync Date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "Creator": item.get('creator', 'Unknown'),
                 "Camera": item.get('camera', 'Unknown'),
-                "Location": item.get('location', 'Unknown'),
                 "Image Preview": img_formula,
                 "QR Preview": qr_formula
             }
@@ -227,12 +225,12 @@ def get_decimal_from_dms(dms, ref):
         return 0.0
 
 def extract_exif(image_data):
-    """Extracts camera model and GPS coordinates from image data."""
+    """Extracts camera model from image data."""
     try:
         img = Image.open(io.BytesIO(image_data))
         exif = img._getexif()
         if not exif:
-            return "Unknown", "Unknown"
+            return "Unknown"
 
         details = {TAGS.get(tag, tag): value for tag, value in exif.items()}
         
@@ -241,28 +239,10 @@ def extract_exif(image_data):
         model = details.get('Model', '')
         camera = f"{make} {model}".strip() or "Unknown"
 
-        # Location Detail
-        location = "Unknown"
-        if 'GPSInfo' in details:
-            gps_info = {}
-            for t in details['GPSInfo']:
-                sub_tag = GPSTAGS.get(t, t)
-                gps_info[sub_tag] = details['GPSInfo'][t]
-
-            lat = gps_info.get('GPSLatitude')
-            lat_ref = gps_info.get('GPSLatitudeRef')
-            lon = gps_info.get('GPSLongitude')
-            lon_ref = gps_info.get('GPSLongitudeRef')
-
-            if lat and lat_ref and lon and lon_ref:
-                decimal_lat = get_decimal_from_dms(lat, lat_ref)
-                decimal_lon = get_decimal_from_dms(lon, lon_ref)
-                location = f"{decimal_lat:.5f}, {decimal_lon:.5f}"
-
-        return camera, location
+        return camera
     except Exception as e:
         logging.debug(f"EXIF error: {e}")
-        return "Unknown", "Unknown"
+        return "Unknown"
 
 def generate_thumbnails(qr_id, image_data, rect):
     """Generates a small image thumbnail and a cropped QR thumbnail."""
@@ -368,7 +348,7 @@ def process_zip(service, file_id, file_name, mapping, creator="Unknown"):
                                     # Generate Thumbnails
                                     t_path, q_path = generate_thumbnails(qr_id, img_data, rect)
                                     # Extract EXIF
-                                    cam, loc = extract_exif(img_data)
+                                    cam = extract_exif(img_data)
 
                                     mapping[qr_id] = {
                                         "filename": os.path.basename(img_name),
@@ -377,9 +357,7 @@ def process_zip(service, file_id, file_name, mapping, creator="Unknown"):
                                         "local_path": local_path,
                                         "thumb_path": t_path,
                                         "qr_path": q_path,
-                                        "creator": creator,
-                                        "camera": cam,
-                                        "location": loc
+                                        "camera": cam
                                     }
                                     new_matches += 1
                                     duplicates_removed = True 
@@ -449,7 +427,7 @@ def process_folder(service, folder_id, mapping):
                     # Generate Thumbnails
                     t_path, q_path = generate_thumbnails(qr_id, img_data, rect)
                     # Extract EXIF
-                    cam, loc = extract_exif(img_data)
+                    cam = extract_exif(img_data)
 
                     mapping[qr_id] = {
                         "filename": file_name, 
@@ -458,9 +436,7 @@ def process_folder(service, folder_id, mapping):
                         "local_path": local_path,
                         "thumb_path": t_path,
                         "qr_path": q_path,
-                        "creator": creator,
-                        "camera": cam,
-                        "location": loc
+                        "camera": cam
                     }
                     match_count += 1
             except Exception as e:
@@ -519,21 +495,27 @@ def main():
         logging.info(f"🚀 Scanning Folder: {folder_id}")
         total_matches += process_folder(drive_service, folder_id, mapping)
 
-    # 3. Heal Mapping (Backfill thumbnails, creators, and metadata)
+    # 3. Heal Mapping (Backfill thumbnails and metadata)
     logging.info("🩹 Healing mapping (backfilling missing meta/thumbs)...")
     healed = 0
-    # Pre-cache zip owners to avoid redundant API calls
-    zip_owners = {}
 
     for qid, item in mapping.items():
         needs_heal = False
         img_data = None
         
+        # Remove unwanted fields if present
+        if 'creator' in item: 
+            del item['creator']
+            needs_heal = True
+        if 'location' in item:
+            del item['location']
+            needs_heal = True
+        
         # 3a. Read imaging data if needed for multiple checks
         local_img = item.get('local_path', '')
         if os.path.exists(local_img):
             # 3b. Heal Thumbnails or EXIF
-            if not item.get('thumb_path') or not item.get('camera'):
+            if not item.get('thumb_path') or not item.get('camera') or item.get('camera') == 'Unknown':
                 try:
                     with open(local_img, 'rb') as f:
                         img_data = f.read()
@@ -546,39 +528,17 @@ def main():
                         needs_heal = True
                     
                     if not item.get('camera') or item.get('camera') == 'Unknown':
-                        cam, loc = extract_exif(img_data)
+                        cam = extract_exif(img_data)
                         item['camera'] = cam
-                        item['location'] = loc
                         needs_heal = True
                 except Exception as e:
                     logging.error(f"Data heal failed for {qid}: {e}")
 
-        # 3c. Heal Creator (Fetch from Drive)
-        if not item.get('creator') or item.get('creator') == 'Unknown':
-            try:
-                creator = "Unknown"
-                if item.get('drive_id'):
-                    f_meta = drive_service.files().get(fileId=item['drive_id'], fields="owners(displayName)").execute()
-                    owners = f_meta.get('owners', [])
-                    creator = owners[0].get('displayName', 'Unknown') if owners else 'Unknown'
-                elif item.get('source_zip'):
-                    z_name = item['source_zip']
-                    if z_name not in zip_owners:
-                        q = f"name = '{z_name}' and trashed = false"
-                        res = drive_service.files().list(q=q, fields="files(owners(displayName))").execute()
-                        files = res.get('files', [])
-                        zip_owners[z_name] = files[0].get('owners', [{}])[0].get('displayName', 'Unknown') if files else 'Unknown'
-                    creator = zip_owners[z_name]
-                
-                if creator != "Unknown":
-                    item['creator'] = creator
-                    needs_heal = True
-            except Exception as e:
-                logging.error(f"Creator heal failed for {qid}: {e}")
+        if needs_heal:
+            healed += 1
 
-        if needs_heal: healed += 1
-    
-    if healed: logging.info(f"✨ Healed {healed} items with missing metadata.")
+    if healed > 0:
+        logging.info(f"✨ Healed {healed} items with updated metadata.")
 
     # 4. Proactively upload ANY missing thumbnails in the mapping
     logging.info("📤 Checking for missing thumbnail uploads to Drive...")

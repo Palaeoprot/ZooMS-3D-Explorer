@@ -113,8 +113,7 @@ Every run updates our shared **Google Sheets tracking log**.
 - **Parchment ID**: ID scanned from QR code
 - **Source Batch**: Which ZIP file it came from
 - **Upload Date**: When the photo was processed
-- **Creator**: Person who uploaded the original batch
-- **Camera & Location**: Technical metadata extracted from the photo
+- **Camera Detail**: Technical metadata extracted from the photo (helps differentiation)
 - **Preview Thumbnails**: Live image links for verification
 - **Gap Analysis**: Checks for missing items in numerical sequences
 
