@@ -1,0 +1,13 @@
+credentials.json
+token.json
+personal-credentials.json
+__pycache__/
+assets/images/
+assets/thumbnails/
+assets/photo_mapping.json
+*.pyc
+.env
+DOCUMENTATION/*.zip
+DOCUMENTATION/*.JPG
+DOCUMENTATION/*.png
+DOCUMENTATION/*.webp
