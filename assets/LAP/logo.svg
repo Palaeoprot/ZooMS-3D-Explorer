@@ -1,0 +1,11 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+    <rect x="10" y="10" width="80" height="80" fill="#0c0a09" />
+    <!-- Cambridge Stone Side -->
+    <path d="M25,75 L25,45 L35,45 L35,35 L50,35 L50,75" fill="#f5f5f4" fill-opacity="0.9" />
+    <!-- Copenhagen Code Side -->
+    <path d="M50,35 L75,35 L75,75 L50,75" fill="#881337" />
+    <path d="M75,45 L85,40 L75,35" fill="#881337" />
+    <path d="M75,60 L85,55 L75,50" fill="#881337" />
+    <path d="M75,75 L85,70 L75,65" fill="#881337" />
+    <text x="50" y="62" font-size="14" font-weight="900" text-anchor="middle" fill="#ffffff" style="font-family: sans-serif; letter-spacing: -1px">LAP</text>
+</svg>
