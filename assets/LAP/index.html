@@ -1,0 +1,364 @@
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leading Agentic Programmers | Stone & Code</title>
+    
+    <!-- ERROR HANDLER -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            const errorBox = document.getElementById('error-box');
+            if (errorBox) {
+                errorBox.style.display = 'block';
+                errorBox.innerHTML += `<p><strong>Error:</strong> ${msg}<br><small>${url}:${line}:${col}</small></p>`;
+            }
+            return false; 
+        };
+    </script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;700;900&display=swap');
+        
+        .font-serif { font-family: 'Crimson Pro', serif; }
+        .font-sans { font-family: 'Inter', sans-serif; }
+        
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .hero-img-container {
+            background-color: #f5f5f4;
+        }
+        
+        #error-box {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 20px;
+            z-index: 9999;
+            border-bottom: 2px solid #7f1d1d;
+            font-family: monospace;
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        rose: {
+                            900: '#881337',
+                            950: '#4c0519',
+                        },
+                        stone: {
+                            50: '#f5f5f4',
+                            100: '#f5f5f4',
+                            200: '#e7e5e4',
+                            500: '#78716c',
+                            800: '#292524',
+                            900: '#1c1917',
+                            950: '#0c0a09',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 
+      IMPORT MAP: SINGLETON REACT FIX
+      Ensures all modules share the exact same React instance to prevent "Minified React Error #31"
+    -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0?dev",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?dev&deps=react@18.2.0",
+            "lucide-react": "https://esm.sh/lucide-react@0.407.0?dev&deps=react@18.2.0"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Error Display Container -->
+    <div id="error-box"></div>
+    
+    <div id="root"></div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        
+        // Import icons from the mapped URL
+        import { 
+            Cpu, Globe, BookOpen, Code2, ChevronRight, Mail, Github, 
+            ExternalLink, Terminal, Zap, ShieldCheck, Building2, Scale, 
+            History, Network, Compass, Anchor, Layers, ArrowRight 
+        } from 'lucide-react';
+
+        // Fallback Icon component
+        const SafeIcon = ({ icon: Icon, ...props }) => {
+            if (!Icon) return <div className={`border-2 border-current opacity-20 rounded-full ${props.className || ''}`} style={{width: props.size || 24, height: props.size || 24}} />;
+            return <Icon {...props} />;
+        };
+
+        const LAPLogo = ({ className = "w-10 h-10", variant = "dark" }) => (
+            <div className={`${className} relative flex items-center justify-center transition-transform group-hover:scale-105 duration-500`}>
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <rect x="10" y="10" width="80" height="80" fill={variant === 'dark' ? '#0c0a09' : '#ffffff'} />
+                    {/* Cambridge Stone Side */}
+                    <path d="M25,75 L25,45 L35,45 L35,35 L50,35 L50,75" fill={variant === 'dark' ? '#f5f5f4' : '#1c1917'} fillOpacity="0.9" />
+                    {/* Copenhagen Code Side */}
+                    <path d="M50,35 L75,35 L75,75 L50,75" fill="#881337" />
+                    <path d="M75,45 L85,40 L75,35" fill="#881337" />
+                    <path d="M75,60 L85,55 L75,50" fill="#881337" />
+                    <path d="M75,75 L85,70 L75,65" fill="#881337" />
+                    <text x="50" y="62" fontSize="14" fontWeight="900" textAnchor="middle" fill={variant === 'dark' ? '#ffffff' : '#0c0a09'} style={{fontFamily: 'sans-serif', letterSpacing: '-1px'}}>LAP</text>
+                </svg>
+            </div>
+        );
+
+        const NavItem = ({ label, href }) => (
+            <a href={href} className="text-stone-500 hover:text-rose-900 transition-colors duration-200 font-semibold text-[10px] uppercase tracking-[0.25em] font-sans">
+                {label}
+            </a>
+        );
+
+        const DirectiveItem = ({ icon: Icon, title, description }) => (
+            <div className="bg-white p-16 border-r border-stone-200 last:border-r-0 hover:bg-stone-50 transition-all duration-1000 group cursor-default">
+                <div className="mb-12 w-16 h-16 bg-stone-50 flex items-center justify-center group-hover:bg-stone-950 group-hover:text-white transition-all transform group-hover:-rotate-12 border border-stone-100 shadow-sm">
+                    <SafeIcon icon={Icon} size={24} />
+                </div>
+                <h3 className="text-3xl font-black text-stone-950 mb-6 tracking-tighter font-serif">{title}</h3>
+                <p className="text-base text-stone-500 leading-relaxed font-sans">
+                    {description}
+                </p>
+            </div>
+        );
+
+        const App = () => {
+            const [scrolled, setScrolled] = useState(false);
+
+            useEffect(() => {
+                const handleScroll = () => setScrolled(window.scrollY > 20);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            return (
+                <div className="min-h-screen bg-white text-stone-900 font-serif selection:bg-rose-900 selection:text-white">
+                    <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/95 backdrop-blur-md py-4 border-b border-stone-100 shadow-sm' : 'bg-transparent py-8'}`}>
+                        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                            <div className="flex items-center gap-4 group cursor-pointer font-sans">
+                                <LAPLogo />
+                                <div className="flex flex-col">
+                                    <span className="text-xl font-black tracking-tighter text-stone-950 leading-none">LAP</span>
+                                    <span className="text-[9px] font-bold text-stone-400 uppercase tracking-[0.25em]">Stone & Code</span>
+                                </div>
+                            </div>
+
+                            <div className="hidden md:flex items-center gap-12 font-sans">
+                                <NavItem label="The Foundry" href="#foundry" />
+                                <NavItem label="Directives" href="#directives" />
+                                <NavItem label="Institutions" href="#institutions" />
+                                <button className="bg-stone-950 hover:bg-rose-900 text-white px-7 py-2.5 text-[11px] font-bold transition-all uppercase tracking-widest border border-stone-950">
+                                    Foundry Terminal
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <section className="relative pt-48 pb-32 overflow-hidden bg-white">
+                        <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-20 items-center">
+                            <div>
+                                <div className="inline-flex items-center gap-3 px-4 py-2 bg-stone-50 border border-stone-200 text-stone-600 text-[10px] font-bold mb-10 uppercase tracking-[0.3em] font-sans shadow-sm">
+                                    <SafeIcon icon={History} size={12} className="text-rose-900" />
+                                    University Spin-Out Collective
+                                </div>
+                                <h1 className="text-7xl md:text-8xl font-black leading-[0.9] mb-10 text-stone-950 tracking-tighter">
+                                    Legacy in <br/>
+                                    <span className="text-rose-950 italic font-medium text-6xl md:text-7xl font-serif">Logic.</span>
+                                </h1>
+                                <p className="text-2xl text-stone-600 mb-12 leading-relaxed max-w-lg font-serif italic">
+                                    Uniting the scholarly rigor of Cambridge with the computational innovation of Copenhagen. We build agentic systems designed for the long-term.
+                                </p>
+                                <div className="flex flex-col sm:flex-row gap-6 font-sans">
+                                    <button className="px-10 py-5 bg-stone-950 text-white font-bold text-xs uppercase tracking-widest hover:bg-rose-950 transition-all transform hover:-translate-y-1 shadow-2xl shadow-stone-300 flex items-center gap-3 group">
+                                        Enter Foundry <SafeIcon icon={ArrowRight} size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                    <button className="px-10 py-5 bg-white text-stone-900 font-bold text-xs uppercase tracking-widest border border-stone-200 hover:border-stone-950 transition-all transform hover:-translate-y-1">
+                                        Research Archive
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="relative">
+                                <div className="absolute -inset-6 bg-stone-100/50 border border-stone-200 -rotate-2 -z-10"></div>
+                                <div className="bg-white border border-stone-200 p-3 shadow-2xl relative overflow-hidden group hero-img-container">
+                                    <div className="bg-stone-50 aspect-[4/5] relative flex items-end overflow-hidden group">
+                                        <div className="absolute inset-0 z-0">
+                                            {/* UPDATED TO USE LOCAL FILE
+                                                Action Required: Upload your image as 'hero.png' to your GitHub repo in the same folder.
+                                            */}
+                                            <img
+                                                src="./hero.jpg"
+                                                alt="University Heritage"
+                                                className="w-full h-full object-cover grayscale opacity-40 mix-blend-multiply group-hover:scale-105 transition-transform duration-1000"
+                                                onError={(e) => {
+                                                    // Fallback if user hasn't uploaded image yet
+                                                    console.warn("Hero image failed to load. Ensure 'hero.jpg' is in the same directory.");
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.classList.add('bg-stone-200'); // Fallback color
+                                                }}
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent"></div>
+                                        </div>
+
+                                        <div className="relative z-10 w-full p-8 font-sans">
+                                            <div className="flex justify-between items-end text-stone-900">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black uppercase tracking-[0.4em] underline decoration-rose-900 underline-offset-4">Cambridge Node</span>
+                                                    <span className="text-[8px] font-bold uppercase tracking-widest mt-2 font-sans">University of Cambridge</span>
+                                                </div>
+                                                <div className="flex flex-col text-right">
+                                                    <span className="text-[11px] font-black uppercase tracking-[0.4em] underline decoration-stone-900 underline-offset-4">Copenhagen Hub</span>
+                                                    <span className="text-[8px] font-bold uppercase tracking-widest mt-2 font-sans">University of Copenhagen</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="absolute -bottom-10 -left-10 bg-stone-950 p-8 text-white shadow-2xl hidden md:block max-w-[240px] border border-white/5">
+                                    <SafeIcon icon={Layers} className="mb-4 text-rose-900 w-6 h-6" />
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] leading-relaxed font-sans">
+                                        Stratified Memory. <br/>Architectural Logic.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="foundry" className="py-32 border-y border-stone-100">
+                        <div className="max-w-7xl mx-auto px-6">
+                            <div className="grid md:grid-cols-2 gap-24 items-center">
+                                <h2 className="text-5xl font-black tracking-tighter leading-none text-stone-950">
+                                    Where <span className="text-rose-900 italic underline decoration-stone-100 underline-offset-8 font-serif">Tradition</span> <br/> 
+                                    becomes <br/>
+                                    <span className="text-stone-800">Neural Agency.</span>
+                                </h2>
+                                <div className="font-sans space-y-10">
+                                    <p className="text-xl text-stone-500 leading-relaxed border-l-8 border-stone-100 pl-8 font-serif italic">
+                                        "We do not build tools that fade. We build agentic systems with the stratigraphic permanence of classical research and the boldness of modern logic."
+                                    </p>
+                                    <div className="pt-8 grid grid-cols-2 gap-12">
+                                        <div>
+                                            <div className="text-4xl font-black text-stone-950">1209</div>
+                                            <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mt-2">Research Heritage</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-4xl font-black text-stone-950">1479</div>
+                                            <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mt-2">Scholarly Foundation</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="directives" className="py-32 bg-stone-50">
+                        <div className="max-w-7xl mx-auto px-6">
+                            <div className="text-center mb-24">
+                                <h2 className="text-[11px] font-bold text-rose-950 uppercase tracking-[0.8em] mb-8 font-sans">Foundational Directives</h2>
+                                <h3 className="text-6xl font-black tracking-tight text-stone-950 italic uppercase tracking-tighter font-serif">Stone & Code.</h3>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-0 border border-stone-200 overflow-hidden shadow-2xl font-sans bg-white">
+                                <DirectiveItem 
+                                    icon={Building2}
+                                    title="Architectural Precision"
+                                    description="Deploying agents that are functionally radical yet structurally verifiable across every deployment."
+                                />
+                                <DirectiveItem 
+                                    icon={History}
+                                    title="Archaeological Depth"
+                                    description="Utilizing university-grade methodologies to manage large-scale agent memory and data stratigraphy."
+                                />
+                                <DirectiveItem 
+                                    icon={Zap}
+                                    title="Agentic Flow"
+                                    description="Bridges of logic connecting the historic halls of Cambridge to the innovative labs of Copenhagen."
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    <footer id="institutions" className="bg-stone-950 text-stone-500 py-32 font-sans overflow-hidden relative border-t-[20px] border-stone-900">
+                        <div className="max-w-7xl mx-auto px-6 relative z-10">
+                            <div className="grid md:grid-cols-2 gap-24 items-start mb-24">
+                                <div>
+                                    <div className="flex items-center gap-6 mb-12 group cursor-pointer">
+                                        <LAPLogo variant="light" className="w-16 h-16" />
+                                        <div className="flex flex-col">
+                                            <span className="font-black text-white tracking-[0.3em] text-3xl uppercase italic">LAP</span>
+                                            <span className="text-[10px] font-bold text-stone-600 uppercase tracking-[0.4em] mt-1">Leading Agentic Programmers</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xl leading-relaxed text-stone-400 max-w-sm font-serif italic">
+                                        A collaborative spin-out across the University of Cambridge and the University of Copenhagen.
+                                    </p>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-16">
+                                    <div className="space-y-8">
+                                        <h4 className="text-white font-bold text-[11px] uppercase tracking-[0.5em] border-b border-stone-800 pb-4">Institutions</h4>
+                                        <ul className="text-xs space-y-6 font-medium text-stone-500">
+                                            <li className="italic flex items-center gap-3"><span className="w-2 h-2 bg-rose-900 rounded-full"></span> Cambridge, UK</li>
+                                            <li className="italic flex items-center gap-3"><span className="w-2 h-2 bg-rose-900 rounded-full"></span> Copenhagen, DK</li>
+                                            <li className="italic flex items-center gap-3"><span className="w-2 h-2 bg-stone-700 rounded-full"></span> Distributed Hub</li>
+                                        </ul>
+                                    </div>
+                                    <div className="space-y-8">
+                                        <h4 className="text-white font-bold text-[11px] uppercase tracking-[0.5em] border-b border-stone-800 pb-4">Network</h4>
+                                        <div className="flex gap-8 pt-2">
+                                            <SafeIcon icon={Github} size={22} className="hover:text-white transition-colors cursor-pointer" />
+                                            <SafeIcon icon={Mail} size={22} className="hover:text-white transition-colors cursor-pointer" />
+                                            <SafeIcon icon={ExternalLink} size={22} className="hover:text-white transition-colors cursor-pointer" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="pt-16 border-t border-stone-900 flex flex-col md:flex-row justify-between gap-8 items-center text-[10px] font-bold uppercase tracking-[0.5em]">
+                                <span>© 2024 Leading Agentic Programmers</span>
+                                <div className="flex items-center gap-10 font-sans">
+                                    <span className="text-rose-900 animate-pulse">Establishing Connection...</span>
+                                    <span className="text-stone-700 italic">Scholarly Spin-out Lab</span>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
