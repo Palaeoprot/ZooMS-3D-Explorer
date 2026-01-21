@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZooMS Explorer</title>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: var(--surface);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+        }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top: Plot */
+        #plot-container {
+            flex: 6;
+            /* 60% height */
+            position: relative;
+            background: var(--surface);
+            border-bottom: 5px solid var(--border);
+        }
+
+        #3d-plot {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Bottom: Table */
+        #table-container {
+            flex: 4;
+            overflow: hidden;
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Table Styles */
+        .table-toolbar {
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: #f1f5f9;
+        }
+
+        .search-box {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            width: 250px;
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: #666;
+            margin-left: auto;
+        }
+
+        .table-scroll {
+            flex: 1;
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: var(--text-sub);
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+            z-index: 5;
+        }
+
+        th:hover {
+            background: #f1f5f9;
+        }
+
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* Interactive States */
+        tr.selected td {
+            background: #e0e7ff;
+            /* Light indigo */
+            border-bottom-color: #c7d2fe;
+        }
+
+        .clickable-cell {
+            color: var(--primary);
+            font-weight: 500;
+            text-decoration: underline;
+        }
+
+        .clickable-cell:hover {
+            color: #1d4ed8;
+        }
+
+        /* Spectrum Modal */
+        #spectrum-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #spectrum-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 1200px;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-sub);
+            padding: 0.25rem 0.5rem;
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
+        }
+
+        #spectrum-plot {
+            flex: 1;
+            min-height: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div>
+            <h1>ZooMS Explorer</h1>
+            <div class="subtitle">Interactive 3D Clustering & Metadata Inspector</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <a href="index.html"
+                style="font-size: 0.9rem; color: var(--primary); text-decoration: none; margin-right: 1rem;">&larr;
+                Projects</a>
+            <label for="color-select" style="font-size: 0.9rem; color: #64748b;">Color by:</label>
+            <select id="color-select"
+                style="padding: 0.4rem 0.8rem; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.9rem; min-width: 180px; background: white;">
+                <!-- Options populated by JS -->
+            </select>
+        </div>
+    </header>
+
+    <main>
+        <div id="plot-container">
+            <!-- Plotly Chart -->
+            <div id="3d-plot"></div>
+        </div>
+
+        <div id="table-container">
+            <div class="table-toolbar">
+                <input type="text" id="search-input" class="search-box" placeholder="Search samples..."
+                    onkeyup="filterTable(this.value)">
+                <div class="help-text">
+                    Click cells to recolor | Row to select | <b>Shift+Click Plot</b> for Quality Report
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table id="data-table">
+                    <thead>
+                        <!-- Generated by JS -->
+                    </thead>
+                    <tbody>
+                        <!-- Generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Spectrum Modal -->
+    <div id="spectrum-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="spectrum-title">Spectrum</h2>
+                <button class="modal-close" onclick="closeSpectrum()">&times;</button>
+            </div>
+            <div id="spectrum-plot"></div>
+        </div>
+    </div>
+
+    <!-- Main Application Script -->
+    <script src="js/app.js"></script>
+
+</body>
+
+</html>
