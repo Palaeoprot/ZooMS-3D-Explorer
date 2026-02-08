@@ -271,26 +271,129 @@ function showSpectrum(id) {
     }
 
     const spec = spectraData[id];
+    const hasPpmError = spec.ppm_error && spec.ppm_error.length > 0;
 
     modal.classList.add('active');
     title.textContent = `Spectrum: ${id}`;
 
-    // Render Stick Plot
-    const trace = {
-        x: spec.mz,
-        y: spec.intensity,
-        type: 'bar', // 'bar' gives a stick-like appearance for discrete MS centers
-        width: 1 // thin bars
-    };
+    // Check if we have ppm_error data for dual-plot mode
+    if (hasPpmError) {
+        // DUAL SUBPLOT MODE: Mass Spectrum (top) + PPM Error (bottom)
 
-    const layout = {
-        title: id,
-        xaxis: { title: 'm/z' },
-        yaxis: { title: 'Intensity' },
-        margin: { t: 40, r: 20, l: 50, b: 50 }
-    };
+        // Create hover text with marker labels if available
+        const hoverText = spec.markers
+            ? spec.mz.map((mz, i) => {
+                const marker = spec.markers[i] || '';
+                const ppm = spec.ppm_error[i] !== null ? spec.ppm_error[i].toFixed(2) : 'N/A';
+                return `m/z: ${mz}<br>Intensity: ${spec.intensity[i]}<br>PPM: ${ppm}<br>${marker}`;
+            })
+            : spec.mz.map((mz, i) => `m/z: ${mz}<br>Intensity: ${spec.intensity[i]}`);
 
-    Plotly.newPlot(plotDiv, [trace], layout);
+        // Trace 1: Mass Spectrum (stick plot)
+        const traceSpectrum = {
+            x: spec.mz,
+            y: spec.intensity,
+            type: 'bar',
+            width: 1,
+            name: 'Intensity',
+            marker: { color: '#1f77b4' },
+            hovertext: hoverText,
+            hoverinfo: 'text',
+            xaxis: 'x',
+            yaxis: 'y'
+        };
+
+        // Filter out null ppm_error values for scatter plot
+        const validPpm = [];
+        const validMz = [];
+        const validColors = [];
+        for (let i = 0; i < spec.ppm_error.length; i++) {
+            if (spec.ppm_error[i] !== null) {
+                validPpm.push(spec.ppm_error[i]);
+                validMz.push(spec.mz[i]);
+                // Color by absolute ppm error (green = good, red = bad)
+                validColors.push(Math.abs(spec.ppm_error[i]));
+            }
+        }
+
+        // Trace 2: PPM Error (scatter plot)
+        const tracePpmError = {
+            x: validMz,
+            y: validPpm,
+            type: 'scatter',
+            mode: 'markers',
+            name: 'PPM Error',
+            marker: {
+                size: 4,
+                color: validColors,
+                colorscale: [[0, '#2ca02c'], [0.5, '#ffff00'], [1, '#d62728']], // Green->Yellow->Red
+                cmin: 0,
+                cmax: 5,
+                colorbar: {
+                    title: 'PPM',
+                    len: 0.3,
+                    y: 0.15
+                }
+            },
+            hovertemplate: 'm/z: %{x}<br>PPM Error: %{y:.2f}<extra></extra>',
+            xaxis: 'x2',
+            yaxis: 'y2'
+        };
+
+        // Dual subplot layout with shared x-axis
+        const layout = {
+            title: { text: id, font: { size: 14 } },
+            grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
+            xaxis: {
+                title: '',
+                anchor: 'y',
+                domain: [0, 1]
+            },
+            yaxis: {
+                title: 'Intensity',
+                anchor: 'x',
+                domain: [0.35, 1]
+            },
+            xaxis2: {
+                title: 'm/z',
+                anchor: 'y2',
+                domain: [0, 1],
+                matches: 'x' // Share x-axis range with top plot
+            },
+            yaxis2: {
+                title: 'PPM Error',
+                anchor: 'x2',
+                domain: [0, 0.28],
+                zeroline: true,
+                zerolinecolor: '#888',
+                zerolinewidth: 1
+            },
+            margin: { t: 40, r: 60, l: 60, b: 50 },
+            showlegend: false,
+            hovermode: 'closest'
+        };
+
+        Plotly.newPlot(plotDiv, [traceSpectrum, tracePpmError], layout);
+
+    } else {
+        // SINGLE PLOT MODE (legacy - no ppm_error data)
+        const trace = {
+            x: spec.mz,
+            y: spec.intensity,
+            type: 'bar',
+            width: 1,
+            marker: { color: '#1f77b4' }
+        };
+
+        const layout = {
+            title: id,
+            xaxis: { title: 'm/z' },
+            yaxis: { title: 'Intensity' },
+            margin: { t: 40, r: 20, l: 50, b: 50 }
+        };
+
+        Plotly.newPlot(plotDiv, [trace], layout);
+    }
 }
 
 function closeSpectrum() {
