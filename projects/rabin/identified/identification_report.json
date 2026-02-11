@@ -1,0 +1,19 @@
+{
+  "total_peaks": 3859486,
+  "identified_peaks": 2686990,
+  "dark_matter_peaks": 1172496,
+  "identification_rate": 69.620410593535,
+  "dark_matter_rate": 30.37958940646501,
+  "unique_markers": 3382,
+  "mean_ppm_error": 0.8259946032340084,
+  "confidence_distribution": {
+    "High (>80)": 1513,
+    "Medium (50-80)": 2274640,
+    "Low (<50)": 410837
+  },
+  "match_types": {
+    "Unique": 305642,
+    "Ambiguous": 251554,
+    "Secondary": 2129794
+  }
+}

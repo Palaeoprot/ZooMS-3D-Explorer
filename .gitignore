@@ -12,3 +12,6 @@ DOCUMENTATION/*.JPG
 DOCUMENTATION/*.png
 DOCUMENTATION/*.webp
 projects/orval/intensity_matrix.csv
+
+projects/rabin/identified/dark_matter_peaks.csv
+projects/rabin/identified/identified_peaks.csv
